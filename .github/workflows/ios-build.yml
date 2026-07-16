@@ -66,10 +66,12 @@ jobs:
           path: ${{ github.workspace }}/build/ipa/BevelClone.ipa
           retention-days: 7
           
-      - name: Upload Build Log (On Failure)
+      - name: Commit Build Log (On Failure)
         if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: xcodebuild-log-${{ github.sha }}
-          path: xcodebuild.log
-          retention-days: 7
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          tail -n 1000 xcodebuild.log > LATEST_BUILD_ERROR.txt
+          git add LATEST_BUILD_ERROR.txt
+          git commit -m "Add failing build log for analysis"
+          git push
