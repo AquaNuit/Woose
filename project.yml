@@ -8,9 +8,9 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - path: BevelClone
-    dependencies:
-      - target: BevelClone Watch App
-        embed: true
+    dependencies: []
+      #- target: BevelClone Watch App
+      #  embed: true
     entitlements:
       path: BevelClone/BevelClone.entitlements
     info:
