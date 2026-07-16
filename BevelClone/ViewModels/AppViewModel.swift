@@ -568,23 +568,20 @@ final class AppViewModel {
     
     // MARK: - Real Data Pipeline
     
-    /// Setup real HealthKit and Watch connectivity
+    /// Setup real HealthKit connectivity
     private func setupRealDataPipeline() async {
-        // Activate Watch sync
-        WatchSyncEngine.shared.activate()
+        // Request HealthKit auth
+        await requestHealthKitAuthorization()
         
-        // Setup data receiver from Watch
-        WatchSyncEngine.shared.onDataReceived = { [weak self] type, payload in
-            guard let self = self else { return }
-            Task { @MainActor in
-                if type == "realtimeHeartRate", let bpm = payload["bpm"] as? Double {
-                    self.currentRHR = Int(bpm) // Just a visual update for demo purposes
+        // Start observing background HealthKit changes
+        if healthKitAuthorized {
+            HealthKitManager.shared.startObservingHealthChanges { [weak self] type in
+                guard let self = self else { return }
+                Task {
+                    await self.refreshHealthData()
                 }
             }
         }
-        
-        // Request HealthKit auth
-        await requestHealthKitAuthorization()
     }
     
     /// Refresh health data from HealthKit
