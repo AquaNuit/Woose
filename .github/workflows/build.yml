@@ -72,8 +72,8 @@ jobs:
           mkdir -p ${{ github.workspace }}/build/ipa
           
           echo "Extracting .app from DerivedData to create unsigned IPA..."
-          # Find the .app inside the generated build products
-          APP_PATH=$(find "${{ github.workspace }}/build/DerivedData/Build/Products" -name "*.app" | head -n 1)
+          # Find the exact iOS .app inside the generated build products (avoid grabbing the watch app by mistake)
+          APP_PATH=$(find "${{ github.workspace }}/build/DerivedData/Build/Products" -name "BevelClone.app" | head -n 1)
           
           if [ -n "$APP_PATH" ]; then
             echo "Found app at: $APP_PATH"
