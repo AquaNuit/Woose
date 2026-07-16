@@ -11,6 +11,8 @@ targets:
     dependencies:
       - target: BevelClone Watch App
         embed: true
+    entitlements:
+      path: BevelClone/BevelClone.entitlements
     info:
       path: BevelClone/Info.plist
       properties:
@@ -38,6 +40,8 @@ targets:
     sources:
       - path: "BevelClone Watch App"
       - path: "BevelClone/Backend"
+    entitlements:
+      path: "BevelClone Watch App/BevelCloneWatchApp.entitlements"
     info:
       path: "BevelClone Watch App/Info.plist"
       properties:
