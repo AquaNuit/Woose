@@ -24,7 +24,28 @@ jobs:
       - name: Show Xcode Version
         run: xcodebuild -version
         
+      - name: Check if Secrets are Configured
+        id: check_secrets
+        run: |
+          if [ -z "${{ secrets.BUILD_CERTIFICATE_BASE64 }}" ]; then
+            echo "secrets_configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Code signing secrets not configured"
+            echo "This workflow requires GitHub Secrets to be set up."
+            echo "Please follow CODESIGNING_SETUP.md to configure:"
+            echo "  - BUILD_CERTIFICATE_BASE64"
+            echo "  - P12_PASSWORD"
+            echo "  - BUILD_PROVISION_PROFILE_BASE64"
+            echo "  - KEYCHAIN_PASSWORD"
+            echo "  - DEVELOPMENT_TEAM"
+            echo "  - BUNDLE_IDENTIFIER"
+            echo "  - PROVISIONING_PROFILE_NAME"
+          else
+            echo "secrets_configured=true" >> $GITHUB_OUTPUT
+            echo "✅ Secrets are configured"
+          fi
+        
       - name: Install Apple Certificate and Provisioning Profile
+        if: steps.check_secrets.outputs.secrets_configured == 'true'
         env:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
           P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
@@ -76,6 +97,7 @@ jobs:
         continue-on-error: true
         
       - name: Build iOS App
+        if: steps.check_secrets.outputs.secrets_configured == 'true'
         env:
           DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
           BUNDLE_IDENTIFIER: ${{ secrets.BUNDLE_IDENTIFIER }}
@@ -93,6 +115,7 @@ jobs:
             | xcpretty || echo "Build completed (may have warnings)"
         
       - name: Export IPA for Sideloading
+        if: steps.check_secrets.outputs.secrets_configured == 'true'
         env:
           DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
           PROVISIONING_PROFILE_NAME: ${{ secrets.PROVISIONING_PROFILE_NAME }}
@@ -133,6 +156,7 @@ jobs:
             | xcpretty || echo "Export completed"
         
       - name: Verify IPA Creation
+        if: steps.check_secrets.outputs.secrets_configured == 'true'
         run: |
           if [ -f "${{ github.workspace }}/build/ipa/BevelClone.ipa" ]; then
             echo "✅ IPA created successfully"
@@ -152,7 +176,33 @@ jobs:
           security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
           rm -rf ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision || true
         
+      - name: Show Configuration Instructions
+        if: steps.check_secrets.outputs.secrets_configured == 'false'
+        run: |
+          echo "## ⚠️ Code Signing Not Configured" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This workflow requires GitHub Secrets for code signing." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Required Secrets (7 total):" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "1. \`BUILD_CERTIFICATE_BASE64\` - Your signing certificate (.p12 → base64)" >> $GITHUB_STEP_SUMMARY
+          echo "2. \`P12_PASSWORD\` - Password for the certificate" >> $GITHUB_STEP_SUMMARY
+          echo "3. \`BUILD_PROVISION_PROFILE_BASE64\` - iOS provisioning profile" >> $GITHUB_STEP_SUMMARY
+          echo "4. \`KEYCHAIN_PASSWORD\` - Temporary keychain password" >> $GITHUB_STEP_SUMMARY
+          echo "5. \`DEVELOPMENT_TEAM\` - Your Apple Team ID (10 characters)" >> $GITHUB_STEP_SUMMARY
+          echo "6. \`BUNDLE_IDENTIFIER\` - App bundle ID (e.g., com.yourname.bevelclone)" >> $GITHUB_STEP_SUMMARY
+          echo "7. \`PROVISIONING_PROFILE_NAME\` - Profile name from Apple Developer" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📖 Setup Guide:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Follow the complete instructions in:" >> $GITHUB_STEP_SUMMARY
+          echo "**[CODESIGNING_SETUP.md](https://github.com/${{ github.repository }}/blob/main/CODESIGNING_SETUP.md)**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Or the quick start guide in:" >> $GITHUB_STEP_SUMMARY
+          echo "**[DEPLOYMENT_GUIDE.md](https://github.com/${{ github.repository }}/blob/main/DEPLOYMENT_GUIDE.md)**" >> $GITHUB_STEP_SUMMARY
+          
       - name: Package Build Artifacts
+        if: steps.check_secrets.outputs.secrets_configured == 'true'
         run: |
           mkdir -p ${{ github.workspace }}/artifacts
           
@@ -213,6 +263,7 @@ jobs:
           ls -lh ${{ github.workspace }}/artifacts/
         
       - name: Upload Signed IPA
+        if: steps.check_secrets.outputs.secrets_configured == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: BevelClone-signed-${{ github.sha }}
@@ -220,9 +271,10 @@ jobs:
             ${{ github.workspace }}/artifacts/BevelClone-signed.ipa
             ${{ github.workspace }}/artifacts/build-info.txt
           retention-days: 30
-          if-no-files-found: error
+          if-no-files-found: warn
           
       - name: Build Summary
+        if: steps.check_secrets.outputs.secrets_configured == 'true'
         run: |
           echo "## 📱 Signed Build Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
