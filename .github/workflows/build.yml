@@ -24,6 +24,11 @@ jobs:
       - name: Show Xcode Version
         run: xcodebuild -version
         
+      - name: Generate Xcode Project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+          
       - name: List Available Schemes
         run: xcodebuild -list -project BevelClone.xcodeproj || echo "No xcodeproj found, checking for workspace..."
         
