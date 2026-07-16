@@ -58,6 +58,18 @@ jobs:
           echo "Found app at: $APP_PATH"
           cp -R "$APP_PATH" "${{ github.workspace }}/build/Payload/"
           
+          # HACK: Bypass Sideloadly's broken bundle ID mangling for Watch Apps!
+          # We manually append the user's Team ID (.LB4HUDB43D) to the Watch App's identifiers AFTER Xcode finishes building,
+          # so Xcode validation succeeds, but Sideloadly's ID patching bug is nullified.
+          WATCH_PLIST="${{ github.workspace }}/build/Payload/BevelClone.app/Watch/BevelClone Watch App.app/Info.plist"
+          if [ -f "$WATCH_PLIST" ]; then
+            echo "Patching Watch App Info.plist..."
+            plutil -replace WKCompanionAppBundleIdentifier -string "com.example.BevelClone.LB4HUDB43D" "$WATCH_PLIST"
+            plutil -replace CFBundleIdentifier -string "com.example.BevelClone.LB4HUDB43D.watchkitapp" "$WATCH_PLIST"
+          else
+            echo "⚠️ Watch App Info.plist not found!"
+          fi
+          
           cd "${{ github.workspace }}/build"
           zip -qr ipa/BevelClone.ipa Payload
           echo "✅ Successfully packaged unsigned IPA"
