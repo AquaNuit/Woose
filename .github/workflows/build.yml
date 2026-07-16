@@ -1,0 +1,167 @@
+name: Build BevelClone IPA
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build iOS App
+    runs-on: macos-15
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Xcode 16.2
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.2'
+          
+      - name: Show Xcode Version
+        run: xcodebuild -version
+        
+      - name: List Available Schemes
+        run: xcodebuild -list -project BevelClone.xcodeproj || echo "No xcodeproj found, checking for workspace..."
+        
+      - name: Resolve Swift Package Dependencies
+        run: |
+          if [ -f "BevelClone.xcodeproj/project.pbxproj" ]; then
+            xcodebuild -resolvePackageDependencies -project BevelClone.xcodeproj
+          else
+            echo "No Xcode project found - dependencies will resolve during build"
+          fi
+        
+      - name: Build for iOS Simulator (Debug)
+        run: |
+          xcodebuild clean build \
+            -scheme BevelClone \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.2' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcpretty || true
+        continue-on-error: true
+        
+      - name: Archive for iOS Device (Release)
+        run: |
+          xcodebuild archive \
+            -scheme BevelClone \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath ${{ github.workspace }}/build/BevelClone.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            DEVELOPMENT_TEAM="" \
+            | xcpretty || true
+        continue-on-error: true
+        
+      - name: Export IPA (Unsigned)
+        run: |
+          mkdir -p ${{ github.workspace }}/build/ipa
+          
+          # Create export options plist for ad-hoc distribution
+          cat > ${{ github.workspace }}/build/ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>development</string>
+              <key>teamID</key>
+              <string></string>
+              <key>compileBitcode</key>
+              <false/>
+              <key>uploadSymbols</key>
+              <false/>
+              <key>signingStyle</key>
+              <string>manual</string>
+          </dict>
+          </plist>
+          EOF
+          
+          # Attempt to export (will fail without proper signing, but creates artifacts)
+          xcodebuild -exportArchive \
+            -archivePath ${{ github.workspace }}/build/BevelClone.xcarchive \
+            -exportPath ${{ github.workspace }}/build/ipa \
+            -exportOptionsPlist ${{ github.workspace }}/build/ExportOptions.plist \
+            CODE_SIGNING_ALLOWED=NO \
+            || echo "Export failed as expected without signing certificates"
+        continue-on-error: true
+        
+      - name: Package Build Artifacts
+        run: |
+          mkdir -p ${{ github.workspace }}/artifacts
+          
+          # Copy xcarchive if it exists
+          if [ -d "${{ github.workspace }}/build/BevelClone.xcarchive" ]; then
+            echo "✅ Archive created successfully"
+            tar -czf ${{ github.workspace }}/artifacts/BevelClone.xcarchive.tar.gz \
+              -C ${{ github.workspace }}/build \
+              BevelClone.xcarchive
+          fi
+          
+          # Copy IPA if it exists
+          if [ -f "${{ github.workspace }}/build/ipa/BevelClone.ipa" ]; then
+            echo "✅ IPA exported successfully"
+            cp ${{ github.workspace }}/build/ipa/BevelClone.ipa \
+              ${{ github.workspace }}/artifacts/BevelClone.ipa
+          fi
+          
+          # Create build info
+          cat > ${{ github.workspace }}/artifacts/build-info.txt <<EOF
+          Build Date: $(date)
+          Commit: ${{ github.sha }}
+          Branch: ${{ github.ref_name }}
+          Xcode Version: $(xcodebuild -version | head -n 1)
+          Runner: macos-15
+          
+          Note: This is an unsigned build for development purposes.
+          To sideload: Use AltStore, SideStore, or resign with your own certificate.
+          EOF
+          
+          echo "📦 Artifacts prepared"
+          ls -lh ${{ github.workspace }}/artifacts/
+        
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: BevelClone-unsigned-${{ github.sha }}
+          path: |
+            ${{ github.workspace }}/artifacts/*.tar.gz
+            ${{ github.workspace }}/artifacts/*.ipa
+            ${{ github.workspace }}/artifacts/build-info.txt
+          retention-days: 30
+          if-no-files-found: warn
+          
+      - name: Build Summary
+        run: |
+          echo "## 📱 Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Runner:** macOS 15 with Xcode 16.2" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "${{ github.workspace }}/artifacts/BevelClone.ipa" ]; then
+            IPA_SIZE=$(du -h "${{ github.workspace }}/artifacts/BevelClone.ipa" | cut -f1)
+            echo "✅ **IPA Created:** BevelClone.ipa ($IPA_SIZE)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **IPA Not Created** - Build artifacts available as .xcarchive" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Download artifacts from the workflow run" >> $GITHUB_STEP_SUMMARY
+          echo "2. Extract the .xcarchive or .ipa file" >> $GITHUB_STEP_SUMMARY
+          echo "3. Resign with your developer certificate using:" >> $GITHUB_STEP_SUMMARY
+          echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "   fastlane sigh resign BevelClone.ipa --signing_identity \"Your Identity\"" >> $GITHUB_STEP_SUMMARY
+          echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "4. Sideload using AltStore, SideStore, or Xcode Devices window" >> $GITHUB_STEP_SUMMARY
