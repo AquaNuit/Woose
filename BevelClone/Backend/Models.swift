@@ -346,7 +346,7 @@ final class JournalEntry {
     }
     
     /// Set a habit's completion status
-    mutating func setCompleted(_ habit: JournalHabit, completed: Bool, source: TriggerSource = .manual) {
+    func setCompleted(_ habit: JournalHabit, completed: Bool, source: TriggerSource = .manual) {
         switch habit {
         case .addedSugar: addedSugar = completed
         case .alcohol: alcohol = completed
