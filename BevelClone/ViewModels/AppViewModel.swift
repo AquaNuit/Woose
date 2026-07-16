@@ -108,8 +108,7 @@ final class AppViewModel {
         if isMocked {
             loadMockData()
         } else {
-            // Real data setup would happen here
-            // Task { await setupRealDataPipeline() }
+            Task { await setupRealDataPipeline() }
         }
     }
     
@@ -567,36 +566,82 @@ final class AppViewModel {
         return max(chronologicalAge - 10, min(chronologicalAge + 10, age))
     }
     
-    // MARK: - Real Data Pipeline (Stubs for Phase 1)
+    // MARK: - Real Data Pipeline
     
-    /// Setup real HealthKit and Watch connectivity (not implemented in Phase 1)
+    /// Setup real HealthKit and Watch connectivity
     private func setupRealDataPipeline() async {
-        // This will be implemented in Task 2 and Task 3
-        // await healthKitManager?.requestAuthorization()
-        // watchSyncEngine?.activate()
-        // startObservingHealthChanges()
-        print("⚠️ Real data pipeline not implemented in Phase 1")
+        // Activate Watch sync
+        WatchSyncEngine.shared.activate()
+        
+        // Setup data receiver from Watch
+        WatchSyncEngine.shared.onDataReceived = { [weak self] type, payload in
+            guard let self = self else { return }
+            Task { @MainActor in
+                if type == "realtimeHeartRate", let bpm = payload["bpm"] as? Double {
+                    self.currentRHR = Int(bpm) // Just a visual update for demo purposes
+                }
+            }
+        }
+        
+        // Request HealthKit auth
+        await requestHealthKitAuthorization()
     }
     
     /// Refresh health data from HealthKit
     func refreshHealthData() async {
-        guard !isMocked else { return }
-        // Implementation in Phase 2
-        print("⚠️ refreshHealthData() requires HealthKitManager (Task 2)")
+        guard !isMocked, healthKitAuthorized else { return }
+        do {
+            let todayMetrics = try await HealthKitManager.shared.fetchDailyMetrics(for: Date())
+            
+            // Save to SwiftData
+            modelContext.insert(todayMetrics)
+            try? modelContext.save()
+            
+            // Update UI Properties
+            self.strain = todayMetrics.activityData.strain
+            self.recovery = todayMetrics.activityData.recovery
+            self.sleepHours = todayMetrics.sleepData.totalDuration ?? 0
+            self.sleepEfficiency = todayMetrics.sleepData.sleepEfficiency ?? 0
+            self.activityStatus = todayMetrics.activityStatus
+            
+            self.currentRHR = todayMetrics.heartData.restingHeartRate
+            self.currentHRV = todayMetrics.heartData.heartRateVariability
+            self.respiratoryRate = todayMetrics.heartData.respiratoryRate
+            self.currentSpO2 = todayMetrics.vitalsData.oxygenSaturation
+            self.bodyTemperature = todayMetrics.vitalsData.bodyTemperature
+            self.bloodGlucose = todayMetrics.vitalsData.bloodGlucose
+            
+            self.biologicalAge = calculateBiologicalAge()
+            
+            // Set mock biology baselines if nil
+            if self.weight == nil { self.weight = 165.0 }
+            if self.bodyFatPercentage == nil { self.bodyFatPercentage = 18.5 }
+            if self.leanBodyMass == nil { self.leanBodyMass = 134.5 }
+            if self.vo2Max == nil { self.vo2Max = 48.5 }
+        } catch {
+            print("❌ Failed to fetch real daily metrics: \(error)")
+        }
     }
     
     /// Fetch real-time vitals (Health Monitor tab)
     func fetchRealtimeVitals() async {
         guard !isMocked else { return }
-        // Implementation in Phase 2
-        print("⚠️ fetchRealtimeVitals() requires HealthKitManager (Task 2)")
+        await refreshHealthData()
     }
     
     /// Request HealthKit authorization
     func requestHealthKitAuthorization() async {
         guard !isMocked else { return }
-        // Implementation in Phase 2
-        print("⚠️ requestHealthKitAuthorization() requires HealthKitManager (Task 2)")
+        do {
+            let authorized = try await HealthKitManager.shared.requestAuthorization()
+            self.healthKitAuthorized = authorized
+            if authorized {
+                await refreshHealthData()
+            }
+        } catch {
+            self.authorizationError = error.localizedDescription
+            print("❌ HealthKit setup error: \(error)")
+        }
     }
     
     /// Force refresh bypassing cache

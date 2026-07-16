@@ -10,6 +10,7 @@ import SwiftData
 
 struct DashboardView: View {
     @Bindable var viewModel: AppViewModel
+    @Binding var selectedTab: Int
     
     var body: some View {
         NavigationStack {
@@ -22,13 +23,13 @@ struct DashboardView: View {
                     bigThreeMetrics
                     
                     // Activity Status
-                    activityStatusCard
+                    Button { selectedTab = 3 } label: { activityStatusCard }.buttonStyle(.plain)
                     
                     // Health Monitor
-                    healthMonitorCard
+                    Button { selectedTab = 3 } label: { healthMonitorCard }.buttonStyle(.plain)
                     
                     // Stress & Energy
-                    stressEnergyCard
+                    Button { selectedTab = 3 } label: { stressEnergyCard }.buttonStyle(.plain)
                     
                     Spacer(minLength: 40)
                 }
@@ -88,28 +89,37 @@ struct DashboardView: View {
         VStack(spacing: 16) {
             HStack(spacing: 16) {
                 // Strain
-                CircularProgressCard(
-                    title: "Strain",
-                    value: viewModel.strain,
-                    color: strainColor(viewModel.strain),
-                    icon: "flame.fill"
-                )
+                Button { selectedTab = 2 } label: {
+                    CircularProgressCard(
+                        title: "Strain",
+                        value: viewModel.strain,
+                        color: strainColor(viewModel.strain),
+                        icon: "flame.fill"
+                    )
+                }
+                .buttonStyle(.plain)
                 
                 // Recovery
-                CircularProgressCard(
-                    title: "Recovery",
-                    value: viewModel.recovery,
-                    color: recoveryColor(viewModel.recovery),
-                    icon: "bolt.heart.fill"
-                )
+                Button { selectedTab = 1 } label: {
+                    CircularProgressCard(
+                        title: "Recovery",
+                        value: viewModel.recovery,
+                        color: recoveryColor(viewModel.recovery),
+                        icon: "bolt.heart.fill"
+                    )
+                }
+                .buttonStyle(.plain)
             }
             .frame(height: 180)
             
             // Sleep
-            SleepCard(
-                hours: viewModel.sleepHours,
-                efficiency: viewModel.sleepEfficiency
-            )
+            Button { selectedTab = 1 } label: {
+                SleepCard(
+                    hours: viewModel.sleepHours,
+                    efficiency: viewModel.sleepEfficiency
+                )
+            }
+            .buttonStyle(.plain)
         }
     }
     

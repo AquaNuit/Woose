@@ -17,7 +17,7 @@ struct ContentView: View {
         Group {
             if let viewModel = viewModel {
                 TabView(selection: $selectedTab) {
-                    DashboardView(viewModel: viewModel)
+                    DashboardView(viewModel: viewModel, selectedTab: $selectedTab)
                         .tabItem {
                             Label("Home", systemImage: "house.fill")
                         }
@@ -57,8 +57,7 @@ struct ContentView: View {
         let isMockedEnvironment = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
         
         // For production: Change to `isMocked: false` to use real HealthKit data
-        // For Swift Playgrounds: Keep `isMocked: true`
-        viewModel = AppViewModel(isMocked: true, modelContext: modelContext)
+        viewModel = AppViewModel(isMocked: isMockedEnvironment, modelContext: modelContext)
     }
 }
 

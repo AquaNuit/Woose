@@ -24,6 +24,8 @@ targets:
         CFBundleName: BevelClone
         CFBundleExecutable: BevelClone
         CFBundlePackageType: APPL
+        NSHealthShareUsageDescription: "Bevel Clone needs access to your health data to calculate Strain, Recovery, Sleep quality, and Biological Age metrics. Your data stays private on your device."
+        NSHealthUpdateUsageDescription: "Bevel Clone needs to save data to HealthKit to track your journal entries and habits."
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.example.BevelClone
       MARKETING_VERSION: "1.0"
@@ -47,6 +49,8 @@ targets:
         CFBundleName: "BevelClone Watch App"
         CFBundleExecutable: "BevelClone Watch App"
         CFBundlePackageType: APPL
+        NSHealthShareUsageDescription: "Bevel Clone Watch App needs access to your health data to monitor real-time heart rate and workouts."
+        NSHealthUpdateUsageDescription: "Bevel Clone Watch App needs to save your workouts to HealthKit."
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.example.BevelClone.watchkitapp
       MARKETING_VERSION: "1.0"
