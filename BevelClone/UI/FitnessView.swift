@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct FitnessView: View {
     @Bindable var viewModel: AppViewModel
@@ -251,5 +252,5 @@ struct MuscleGroupBar: View {
     let context = container.mainContext
     let viewModel = AppViewModel(isMocked: true, modelContext: context)
     
-    return FitnessView(viewModel: viewModel)
+    FitnessView(viewModel: viewModel)
 }

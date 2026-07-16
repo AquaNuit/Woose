@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct BiologyView: View {
     @Bindable var viewModel: AppViewModel
@@ -259,5 +260,5 @@ struct BiomarkerCard: View {
     let context = container.mainContext
     let viewModel = AppViewModel(isMocked: true, modelContext: context)
     
-    return BiologyView(viewModel: viewModel)
+    BiologyView(viewModel: viewModel)
 }

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct DashboardView: View {
     @Bindable var viewModel: AppViewModel
@@ -502,5 +503,5 @@ struct GlassCard<Content: View>: View {
     let context = container.mainContext
     let viewModel = AppViewModel(isMocked: true, modelContext: context)
     
-    return DashboardView(viewModel: viewModel)
+    DashboardView(viewModel: viewModel)
 }

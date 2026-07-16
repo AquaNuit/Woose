@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct JournalView: View {
     @Bindable var viewModel: AppViewModel
@@ -258,5 +259,5 @@ struct HabitRow: View {
     let context = container.mainContext
     let viewModel = AppViewModel(isMocked: true, modelContext: context)
     
-    return JournalView(viewModel: viewModel)
+    JournalView(viewModel: viewModel)
 }
