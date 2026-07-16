@@ -40,7 +40,7 @@ targets:
       path: "BevelClone Watch App/Info.plist"
       properties:
         WKCompanionAppBundleIdentifier: com.example.BevelClone
-        WKWatchKitApp: true
+        WKApplication: true
         CFBundleShortVersionString: "1.0"
         CFBundleVersion: "1"
         CFBundleIdentifier: com.example.BevelClone.watchkitapp
