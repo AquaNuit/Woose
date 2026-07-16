@@ -1,0 +1,75 @@
+name: BevelClone Strict Build
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & Export IPA
+    runs-on: macos-15
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Xcode 16.2
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.2'
+          
+      - name: Install XcodeGen
+        run: brew install xcodegen
+        
+      - name: Generate Xcode Project
+        run: xcodegen generate
+        
+      - name: Build Unsigned App
+        run: |
+          set -o pipefail
+          xcodebuild clean build \
+            -scheme BevelClone \
+            -sdk iphoneos \
+            -configuration Release \
+            -derivedDataPath ${{ github.workspace }}/build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            DEVELOPMENT_TEAM="" \
+            | tee xcodebuild.log | xcpretty
+            
+      - name: Package IPA
+        run: |
+          mkdir -p ${{ github.workspace }}/build/ipa
+          mkdir -p ${{ github.workspace }}/build/Payload
+          
+          # Explicitly find BevelClone.app and avoid watch app bundles
+          APP_PATH=$(find "${{ github.workspace }}/build/DerivedData/Build/Products" -name "BevelClone.app" | head -n 1)
+          
+          if [ -z "$APP_PATH" ]; then
+            echo "❌ CRITICAL ERROR: BevelClone.app was not found in DerivedData. The build likely failed silently."
+            exit 1
+          fi
+          
+          echo "Found app at: $APP_PATH"
+          cp -R "$APP_PATH" "${{ github.workspace }}/build/Payload/"
+          
+          cd "${{ github.workspace }}/build"
+          zip -qr ipa/BevelClone.ipa Payload
+          echo "✅ Successfully packaged unsigned IPA"
+          
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BevelClone-unsigned-${{ github.sha }}
+          path: ${{ github.workspace }}/build/ipa/BevelClone.ipa
+          retention-days: 7
+          
+      - name: Upload Build Log (On Failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log-${{ github.sha }}
+          path: xcodebuild.log
+          retention-days: 7

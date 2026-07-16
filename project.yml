@@ -5,7 +5,7 @@ targets:
   BevelClone:
     type: application
     platform: iOS
-    deploymentTarget: "16.0"
+    deploymentTarget: "17.0"
     sources:
       - path: BevelClone
     dependencies:
@@ -32,9 +32,10 @@ targets:
   BevelClone Watch App:
     type: application
     platform: watchOS
-    deploymentTarget: "9.0"
+    deploymentTarget: "10.0"
     sources:
       - path: "BevelClone Watch App"
+      - path: "BevelClone/Backend"
     info:
       path: "BevelClone Watch App/Info.plist"
       properties:
