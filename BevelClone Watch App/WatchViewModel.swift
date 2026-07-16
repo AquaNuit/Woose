@@ -148,11 +148,15 @@ class WatchViewModel: NSObject, ObservableObject {
             anchor: nil,
             limit: HKObjectQueryNoLimit
         ) { [weak self] _, samples, _, _, _ in
-            self?.processHeartRateSamples(samples)
+            Task { @MainActor in
+                self?.processHeartRateSamples(samples)
+            }
         }
         
         query.updateHandler = { [weak self] _, samples, _, _, _ in
-            self?.processHeartRateSamples(samples)
+            Task { @MainActor in
+                self?.processHeartRateSamples(samples)
+            }
         }
         
         healthStore.execute(query)

@@ -33,7 +33,7 @@ jobs:
           set -o pipefail
           xcodebuild clean build \
             -scheme BevelClone \
-            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
             -configuration Release \
             -derivedDataPath ${{ github.workspace }}/build/DerivedData \
             CODE_SIGNING_ALLOWED=NO \

@@ -425,7 +425,7 @@ final class FitnessVolume {
     }
     
     /// Set volume for a specific muscle group
-    mutating func setVolume(for muscleGroup: MuscleGroup, sets: Int) {
+    func setVolume(for muscleGroup: MuscleGroup, sets: Int) {
         switch muscleGroup {
         case .chest: strengthVolumeChest = sets
         case .arms: strengthVolumeArms = sets
