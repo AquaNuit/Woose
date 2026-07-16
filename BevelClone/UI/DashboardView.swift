@@ -513,5 +513,5 @@ struct GlassCard<Content: View>: View {
     let context = container.mainContext
     let viewModel = AppViewModel(isMocked: true, modelContext: context)
     
-    DashboardView(viewModel: viewModel)
+    DashboardView(viewModel: viewModel, selectedTab: .constant(0))
 }
