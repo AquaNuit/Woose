@@ -48,13 +48,13 @@ jobs:
             | xcpretty || true
         continue-on-error: true
         
-      - name: Archive for iOS Device (Release)
+      - name: Build for iOS Device (Release, Unsigned)
         run: |
-          xcodebuild archive \
+          xcodebuild build \
             -scheme BevelClone \
             -sdk iphoneos \
             -configuration Release \
-            -archivePath ${{ github.workspace }}/build/BevelClone.xcarchive \
+            -derivedDataPath ${{ github.workspace }}/build/DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
@@ -66,9 +66,9 @@ jobs:
         run: |
           mkdir -p ${{ github.workspace }}/build/ipa
           
-          echo "Extracting .app from xcarchive to create unsigned IPA..."
-          # Find the .app inside the generated xcarchive
-          APP_PATH=$(find "${{ github.workspace }}/build/BevelClone.xcarchive/Products/Applications" -name "*.app" | head -n 1)
+          echo "Extracting .app from DerivedData to create unsigned IPA..."
+          # Find the .app inside the generated build products
+          APP_PATH=$(find "${{ github.workspace }}/build/DerivedData/Build/Products" -name "*.app" | head -n 1)
           
           if [ -n "$APP_PATH" ]; then
             echo "Found app at: $APP_PATH"
@@ -83,7 +83,7 @@ jobs:
             
             echo "✅ Successfully created unsigned IPA"
           else
-            echo "⚠️ Failed to find .app in xcarchive"
+            echo "⚠️ Failed to find .app in build products"
           fi
         continue-on-error: true
         
